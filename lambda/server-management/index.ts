@@ -28,11 +28,19 @@ export const handler = async (
     const worldId = event.pathParameters?.worldId;
     const serverName = event.pathParameters?.serverName;
     const datapackId = event.pathParameters?.datapackId;
-    log("Event: ", event);
+    log(
+      "Event path: ",
+      event.path,
+      "Method: ",
+      event.httpMethod,
+      "params: ",
+      event.pathParameters
+    );
     switch (true) {
       case path === "/api/minecraft/worlds" && method === "GET":
-        log("GET /api/minecraft/worlds");
         return await handlers.getWorlds();
+      case path === "/api/minecraft/worlds" && method === "POST":
+        return await handlers.createWorld(event);
       case path === `/api/minecraft/worlds/${worldId}` && method === "GET":
         return await handlers.getWorld(worldId!);
       case path === `/api/minecraft/worlds/${worldId}/start` &&
@@ -57,6 +65,12 @@ export const handler = async (
         `/api/minecraft/worlds/${worldId}/datapacks/${datapackId}` &&
         method === "DELETE":
         return await handlers.deleteDatapack(worldId!, datapackId!);
+      case path === `/api/minecraft/worlds/${worldId}/properties` &&
+        method === "PUT":
+        return await handlers.putProperties(worldId!, event);
+      case path === `/api/minecraft/worlds/${worldId}/properties` &&
+        method === "GET":
+        return await handlers.getProperties(worldId!);
       default:
         log("Default - Not Found");
         return {
@@ -88,6 +102,25 @@ const handlers = {
   async getWorlds(): Promise<APIGatewayProxyResult> {
     const response = await axios.get(`${AGENT_URL}/api/minecraft/worlds`);
     return createResponse(200, response.data);
+  },
+
+  async createWorld(
+    event: APIGatewayProxyEvent
+  ): Promise<APIGatewayProxyResult> {
+    try {
+      log("POST /worlds", event.body);
+      await axios.post(`${AGENT_URL}/api/minecraft/worlds`, event.body, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      return createResponse(200, {
+        message: "World created successfully",
+      });
+    } catch (error) {
+      console.error("Error creating world:", error);
+      return createResponse(500, { message: "Error creating world" });
+    }
   },
 
   // GET /api/minecraft/worlds/{worldId}
@@ -181,6 +214,31 @@ const handlers = {
       `${AGENT_URL}/api/minecraft/worlds/${worldId}/datapacks/${datapackId}`
     );
     return createResponse(200, { message: "Datapack deleted" });
+  },
+
+  async putProperties(
+    worldId: string,
+    event: APIGatewayProxyEvent
+  ): Promise<APIGatewayProxyResult> {
+    const properties = JSON.parse(event.body || "{}");
+    log("PUT /worlds/{worldId}/properties", properties);
+    const response = await axios.put(
+      `${AGENT_URL}/api/minecraft/worlds/${worldId}/properties`,
+      {
+        properties: properties.properties,
+      }
+    );
+    log("PUT /worlds/{worldId}/properties", response.data);
+    return createResponse(200, { message: "Properties updated" });
+  },
+
+  async getProperties(worldId: string): Promise<APIGatewayProxyResult> {
+    log("GET /worlds/{worldId}/properties");
+    const response = await axios.get(
+      `${AGENT_URL}/api/minecraft/worlds/${worldId}/properties`
+    );
+    log("GET /worlds/{worldId}/properties", response.data);
+    return createResponse(200, response.data);
   },
 
   // POST /api/minecraft/servers/{serverName}/backup

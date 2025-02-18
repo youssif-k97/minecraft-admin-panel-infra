@@ -92,6 +92,10 @@ export class MinecraftAdminPanelInfraStack extends cdk.Stack {
       new apigateway.LambdaIntegration(serverManagementFunction),
       { apiKeyRequired: false }
     );
+    worlds.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(serverManagementFunction)
+    );
     const world = worlds.addResource("{worldId}");
     world.addMethod(
       "GET",
@@ -107,6 +111,24 @@ export class MinecraftAdminPanelInfraStack extends cdk.Stack {
 
     const stopWorld = world.addResource("stop");
     stopWorld.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(serverManagementFunction)
+    );
+
+    const restartWorld = world.addResource("restart");
+    restartWorld.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(serverManagementFunction)
+    );
+
+    const downloadWorld = world.addResource("download");
+    downloadWorld.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(serverManagementFunction)
+    );
+
+    const backupWorld = world.addResource("backup");
+    backupWorld.addMethod(
       "POST",
       new apigateway.LambdaIntegration(serverManagementFunction)
     );
@@ -134,6 +156,17 @@ export class MinecraftAdminPanelInfraStack extends cdk.Stack {
       new apigateway.LambdaIntegration(serverManagementFunction)
     );
 
+    // Server properties endpoints
+    const properties = world.addResource("properties");
+    properties.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(serverManagementFunction)
+    );
+    properties.addMethod(
+      "PUT",
+      new apigateway.LambdaIntegration(serverManagementFunction)
+    );
+
     // Player management endpoints
     const players = world.addResource("players");
     players.addMethod(
@@ -151,26 +184,6 @@ export class MinecraftAdminPanelInfraStack extends cdk.Stack {
 
     const blacklist = player.addResource("blacklist");
     blacklist.addMethod(
-      "POST",
-      new apigateway.LambdaIntegration(serverManagementFunction)
-    );
-
-    // Server properties endpoints
-    const properties = world.addResource("properties");
-    properties.addMethod(
-      "GET",
-      new apigateway.LambdaIntegration(serverManagementFunction)
-    );
-    properties.addMethod(
-      "PUT",
-      new apigateway.LambdaIntegration(serverManagementFunction)
-    );
-
-    // Servers backup endpoint
-    const servers = minecraft.addResource("servers");
-    const serverName = servers.addResource("{serverName}");
-    const backup = serverName.addResource("backup");
-    backup.addMethod(
       "POST",
       new apigateway.LambdaIntegration(serverManagementFunction)
     );
