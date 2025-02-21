@@ -70,6 +70,9 @@ export const handler = async (
         return await handlers.putProperties(worldId!, event);
       case path === `/api/minecraft/worlds/${worldId}/ram` && method === "POST":
         return await handlers.updateRam(worldId!, event);
+      case path === `/api/minecraft/worlds/${worldId}/port` &&
+        method === "POST":
+        return await handlers.updatePort(worldId!, event);
       case path === `/api/minecraft/worlds/${worldId}/properties` &&
         method === "GET":
         return await handlers.getProperties(worldId!);
@@ -240,14 +243,30 @@ const handlers = {
   ): Promise<APIGatewayProxyResult> {
     const ram = JSON.parse(event.body || "{}");
     log("POST /worlds/{worldId}/ram", ram);
-    const response = await axios.put(
+    const response = await axios.post(
       `${AGENT_URL}/api/minecraft/worlds/${worldId}/ram`,
       {
         ram: ram,
       }
     );
-    log("PUT /worlds/{worldId}/properties", response.data);
-    return createResponse(200, { message: "Properties updated" });
+    log("POST /worlds/{worldId}/ram", response.data);
+    return createResponse(200, { message: "Ram updated" });
+  },
+
+  async updatePort(
+    worldId: string,
+    event: APIGatewayProxyEvent
+  ): Promise<APIGatewayProxyResult> {
+    const port = JSON.parse(event.body || "{}");
+    log("POST /worlds/{worldId}/port", port);
+    const response = await axios.post(
+      `${AGENT_URL}/api/minecraft/worlds/${worldId}/port`,
+      {
+        port: port,
+      }
+    );
+    log("POST /worlds/{worldId}/port", response.data);
+    return createResponse(200, { message: "Port updated" });
   },
 
   async getProperties(worldId: string): Promise<APIGatewayProxyResult> {

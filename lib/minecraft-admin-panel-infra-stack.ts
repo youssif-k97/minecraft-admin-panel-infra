@@ -127,6 +127,12 @@ export class MinecraftAdminPanelInfraStack extends cdk.Stack {
       new apigateway.LambdaIntegration(serverManagementFunction)
     );
 
+    const changeWorldPort = world.addResource("port");
+    changeWorldPort.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(serverManagementFunction)
+    );
+
     const downloadWorld = world.addResource("download");
     downloadWorld.addMethod(
       "POST",
