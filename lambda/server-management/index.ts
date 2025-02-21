@@ -68,6 +68,8 @@ export const handler = async (
       case path === `/api/minecraft/worlds/${worldId}/properties` &&
         method === "PUT":
         return await handlers.putProperties(worldId!, event);
+      case path === `/api/minecraft/worlds/${worldId}/ram` && method === "POST":
+        return await handlers.updateRam(worldId!, event);
       case path === `/api/minecraft/worlds/${worldId}/properties` &&
         method === "GET":
         return await handlers.getProperties(worldId!);
@@ -226,6 +228,22 @@ const handlers = {
       `${AGENT_URL}/api/minecraft/worlds/${worldId}/properties`,
       {
         properties: properties.properties,
+      }
+    );
+    log("PUT /worlds/{worldId}/properties", response.data);
+    return createResponse(200, { message: "Properties updated" });
+  },
+
+  async updateRam(
+    worldId: string,
+    event: APIGatewayProxyEvent
+  ): Promise<APIGatewayProxyResult> {
+    const ram = JSON.parse(event.body || "{}");
+    log("POST /worlds/{worldId}/ram", ram);
+    const response = await axios.put(
+      `${AGENT_URL}/api/minecraft/worlds/${worldId}/ram`,
+      {
+        ram: ram,
       }
     );
     log("PUT /worlds/{worldId}/properties", response.data);
