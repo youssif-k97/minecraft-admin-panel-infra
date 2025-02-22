@@ -246,7 +246,8 @@ const handlers = {
     const response = await axios.post(
       `${AGENT_URL}/api/minecraft/worlds/${worldId}/ram`,
       {
-        ram: ram,
+        min: ram.min,
+        max: ram.max,
       }
     );
     log("POST /worlds/{worldId}/ram", response.data);
@@ -262,7 +263,7 @@ const handlers = {
     const response = await axios.post(
       `${AGENT_URL}/api/minecraft/worlds/${worldId}/port`,
       {
-        port: port,
+        port: port.port,
       }
     );
     log("POST /worlds/{worldId}/port", response.data);
