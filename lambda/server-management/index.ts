@@ -52,6 +52,9 @@ export const handler = async (
       case path === `/api/minecraft/servers/${serverName}/backup` &&
         method === "POST":
         return await handlers.backupServer(serverName!);
+      case path === `/api/minecraft/worlds/${worldId}/download` &&
+        method === "POST":
+        return await handlers.getDownloadUrl(worldId!, event);
       case path === `/api/minecraft/worlds/${worldId}/datapacks` &&
         method === "GET":
         return await handlers.getDatapacks(worldId!);
@@ -161,8 +164,9 @@ const handlers = {
     event: APIGatewayProxyEvent
   ): Promise<APIGatewayProxyResult> {
     try {
-      let { name } = JSON.parse(event.body || "{}");
-      const key = `${worldId}/datapacks/${name.replace(
+      let { name, type } = JSON.parse(event.body || "{}");
+      const folder = type === null ? "default" : type;
+      const key = `${worldId}/${folder}/${name.replace(
         " ",
         ""
       )}-${Date.now()}.zip`;
@@ -177,6 +181,36 @@ const handlers = {
     } catch (error) {
       console.error("Error generating upload URL:", error);
       return createResponse(500, { message: "Error generating upload URL" });
+    }
+  },
+
+  async getDownloadUrl(
+    worldId: string,
+    event: APIGatewayProxyEvent
+  ): Promise<APIGatewayProxyResult> {
+    try {
+      const { uploadUrl, key } = JSON.parse(event.body || "{}");
+      console.log("Logging key info ", uploadUrl, key);
+      const response = await axios.post(
+        `${AGENT_URL}/api/minecraft/worlds/${worldId}/download`,
+        {
+          uploadUrl,
+        }
+      );
+      console.log(response);
+      // Generate download URL for agent
+      const downloadUrl = await s3.getSignedUrlPromise("getObject", {
+        Bucket: DATAPACK_BUCKET,
+        Key: key,
+        Expires: 120,
+      });
+      return createResponse(200, {
+        message: "Download Url generated",
+        url: downloadUrl,
+      });
+    } catch (error) {
+      console.error("Error getting download url:", error);
+      return createResponse(500, { message: "Error getting download url" });
     }
   },
 
