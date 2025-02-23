@@ -49,6 +49,9 @@ export const handler = async (
       case path === `/api/minecraft/worlds/${worldId}/stop` &&
         method === "POST":
         return await handlers.stopWorld(worldId!);
+      case path === `/api/minecraft/worlds/${worldId}/restart` &&
+        method === "POST":
+        return await handlers.restartWorld(worldId!);
       case path === `/api/minecraft/servers/${serverName}/backup` &&
         method === "POST":
         return await handlers.backupServer(serverName!);
@@ -149,6 +152,11 @@ const handlers = {
   async stopWorld(worldId: string): Promise<APIGatewayProxyResult> {
     await axios.post(`${AGENT_URL}/api/minecraft/worlds/${worldId}/stop`);
     return createResponse(200, { message: "World stop initiated" });
+  },
+
+  async restartWorld(worldId: string): Promise<APIGatewayProxyResult> {
+    await axios.post(`${AGENT_URL}/api/minecraft/worlds/${worldId}/restart`);
+    return createResponse(200, { message: "World restart initiated" });
   },
 
   async getDatapacks(worldId: string): Promise<APIGatewayProxyResult> {
