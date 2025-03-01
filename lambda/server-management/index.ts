@@ -79,6 +79,9 @@ export const handler = async (
       case path === `/api/minecraft/worlds/${worldId}/properties` &&
         method === "GET":
         return await handlers.getProperties(worldId!);
+      case path === `/api/minecraft/worlds/${worldId}/players` &&
+        method === "GET":
+        return await handlers.getPlayers(worldId!);
       default:
         log("Default - Not Found");
         return {
@@ -317,5 +320,12 @@ const handlers = {
   async backupServer(serverName: string): Promise<APIGatewayProxyResult> {
     await axios.post(`${AGENT_URL}/api/minecraft/servers/${serverName}/backup`);
     return createResponse(200, { message: "Backup initiated" });
+  },
+
+  async getPlayers(worldId: string): Promise<APIGatewayProxyResult> {
+    const response = await axios.get(
+      `${AGENT_URL}/api/minecraft/worlds/${worldId}/players`
+    );
+    return createResponse(200, response.data);
   },
 };
