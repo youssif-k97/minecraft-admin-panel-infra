@@ -121,6 +121,12 @@ export class MinecraftAdminPanelInfraStack extends cdk.Stack {
       new apigateway.LambdaIntegration(serverManagementFunction)
     );
 
+    const rawRconCommand = world.addResource("raw-rcon-command");
+    rawRconCommand.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(serverManagementFunction)
+    );
+
     const changeWorldRam = world.addResource("ram");
     changeWorldRam.addMethod(
       "POST",

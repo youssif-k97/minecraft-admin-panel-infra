@@ -52,6 +52,9 @@ export const handler = async (
       case path === `/api/minecraft/worlds/${worldId}/restart` &&
         method === "POST":
         return await handlers.restartWorld(worldId!);
+      case path === `/api/minecraft/worlds/${worldId}/raw-rcon-command` &&
+        method === "POST":
+        return await handlers.rawRconCommand(worldId!, event);
       case path === `/api/minecraft/servers/${serverName}/backup` &&
         method === "POST":
         return await handlers.backupServer(serverName!);
@@ -160,6 +163,18 @@ const handlers = {
   async restartWorld(worldId: string): Promise<APIGatewayProxyResult> {
     await axios.post(`${AGENT_URL}/api/minecraft/worlds/${worldId}/restart`);
     return createResponse(200, { message: "World restart initiated" });
+  },
+
+  async rawRconCommand(
+    worldId: string,
+    event: APIGatewayProxyEvent
+  ): Promise<APIGatewayProxyResult> {
+    const command = JSON.parse(event.body || "{}");
+    const response = await axios.post(
+      `${AGENT_URL}/api/minecraft/worlds/${worldId}/raw-rcon-command`,
+      { command: command.command }
+    );
+    return createResponse(200, { message: response.data });
   },
 
   async getDatapacks(worldId: string): Promise<APIGatewayProxyResult> {
