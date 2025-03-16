@@ -1,9 +1,14 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { log } from "console";
-import { S3 } from "aws-sdk";
-const axios = require("axios").default;
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import axios from "axios";
 
-const s3 = new S3();
+const s3Client = new S3Client({});
 const AGENT_URL = process.env.AGENT_URL;
 const DATAPACK_BUCKET = process.env.DATAPACK_BUCKET;
 
@@ -85,9 +90,6 @@ export const handler = async (
       case path === `/api/minecraft/worlds/${worldId}/properties` &&
         method === "GET":
         return await handlers.getProperties(worldId!);
-      case path === `/api/minecraft/worlds/${worldId}/players` &&
-        method === "GET":
-        return await handlers.getPlayers(worldId!);
       default:
         log("Default - Not Found");
         return {
@@ -109,7 +111,7 @@ export const handler = async (
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
       },
-      body: JSON.stringify({ message: "somme Internal server error" }),
+      body: JSON.stringify({ message: "Internal server error" }),
     };
   }
 };
@@ -197,11 +199,14 @@ const handlers = {
         ""
       )}-${Date.now()}.zip`;
 
-      const uploadUrl = await s3.getSignedUrlPromise("putObject", {
+      const command = new PutObjectCommand({
         Bucket: DATAPACK_BUCKET,
         Key: key,
         ContentType: "application/zip",
-        Expires: 60,
+      });
+
+      const uploadUrl = await getSignedUrl(s3Client, command, {
+        expiresIn: 60,
       });
       return createResponse(200, { uploadUrl, key });
     } catch (error) {
@@ -225,10 +230,13 @@ const handlers = {
       );
       console.log(response);
       // Generate download URL for agent
-      const downloadUrl = await s3.getSignedUrlPromise("getObject", {
+      const command = new GetObjectCommand({
         Bucket: DATAPACK_BUCKET,
         Key: key,
-        Expires: 120,
+      });
+
+      const downloadUrl = await getSignedUrl(s3Client, command, {
+        expiresIn: 120,
       });
       return createResponse(200, {
         message: "Download Url generated",
@@ -248,10 +256,13 @@ const handlers = {
       const { key, name } = JSON.parse(event.body || "{}");
 
       // Generate download URL for agent
-      const downloadUrl = await s3.getSignedUrlPromise("getObject", {
+      const command = new GetObjectCommand({
         Bucket: DATAPACK_BUCKET,
         Key: key,
-        Expires: 120,
+      });
+
+      const downloadUrl = await getSignedUrl(s3Client, command, {
+        expiresIn: 120,
       });
 
       // Notify agent
@@ -343,12 +354,5 @@ const handlers = {
   async backupServer(serverName: string): Promise<APIGatewayProxyResult> {
     await axios.post(`${AGENT_URL}/api/minecraft/servers/${serverName}/backup`);
     return createResponse(200, { message: "Backup initiated" });
-  },
-
-  async getPlayers(worldId: string): Promise<APIGatewayProxyResult> {
-    const response = await axios.get(
-      `${AGENT_URL}/api/minecraft/worlds/${worldId}/players`
-    );
-    return createResponse(200, response.data);
   },
 };

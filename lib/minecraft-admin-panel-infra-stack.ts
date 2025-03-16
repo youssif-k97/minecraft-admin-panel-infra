@@ -4,22 +4,51 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import * as nodejsLambda from "aws-cdk-lib/aws-lambda-nodejs";
 
 export class MinecraftAdminPanelInfraStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const serverManagementFunction = new lambda.Function(
+    const serverManagementFunction = new nodejsLambda.NodejsFunction(
       this,
       "ServerManagement",
       {
         runtime: lambda.Runtime.NODEJS_20_X,
-        handler: "index.handler",
-        code: lambda.Code.fromAsset("lambda/server-management"),
+        handler: "handler",
+        entry: "lambda/server-management/index.ts",
         environment: {
           AGENT_URL: process.env.AGENT_URL || "http://188.34.159.126:80",
         },
         timeout: cdk.Duration.seconds(30),
+        bundling: {
+          minify: true,
+          sourceMap: true,
+          nodeModules: ["axios"], // Include axios in the bundle
+          externalModules: [
+            "@aws-sdk/client-s3",
+            "@aws-sdk/s3-request-presigner",
+          ],
+        },
+      }
+    );
+
+    const playerManagementFunction = new nodejsLambda.NodejsFunction(
+      this,
+      "PlayerManagement",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: "handler",
+        entry: "lambda/player-management/index.ts",
+        environment: {
+          AGENT_URL: process.env.AGENT_URL || "http://188.34.159.126:80",
+        },
+        timeout: cdk.Duration.seconds(30),
+        bundling: {
+          minify: true,
+          sourceMap: true,
+          nodeModules: ["axios"],
+        },
       }
     );
 
@@ -127,18 +156,6 @@ export class MinecraftAdminPanelInfraStack extends cdk.Stack {
       new apigateway.LambdaIntegration(serverManagementFunction)
     );
 
-    const changeWorldRam = world.addResource("ram");
-    changeWorldRam.addMethod(
-      "POST",
-      new apigateway.LambdaIntegration(serverManagementFunction)
-    );
-
-    const changeWorldPort = world.addResource("port");
-    changeWorldPort.addMethod(
-      "POST",
-      new apigateway.LambdaIntegration(serverManagementFunction)
-    );
-
     const downloadWorld = world.addResource("download");
     downloadWorld.addMethod(
       "POST",
@@ -184,26 +201,48 @@ export class MinecraftAdminPanelInfraStack extends cdk.Stack {
       "PUT",
       new apigateway.LambdaIntegration(serverManagementFunction)
     );
+    const changeWorldRam = world.addResource("ram");
+    changeWorldRam.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(serverManagementFunction)
+    );
 
-    // Player management endpoints
+    const changeWorldPort = world.addResource("port");
+    changeWorldPort.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(serverManagementFunction)
+    );
+
+    // Player management endpoints - now using the playerManagementFunction
     const players = world.addResource("players");
     players.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(serverManagementFunction)
+      new apigateway.LambdaIntegration(playerManagementFunction)
     );
-
-    const player = players.addResource("{username}");
-
-    const whitelist = player.addResource("whitelist");
-    whitelist.addMethod(
+    const banPlayer = world.addResource("banPlayer");
+    banPlayer.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(serverManagementFunction)
+      new apigateway.LambdaIntegration(playerManagementFunction)
     );
-
-    const blacklist = player.addResource("blacklist");
-    blacklist.addMethod(
+    const kickPlayer = world.addResource("kickPlayer");
+    kickPlayer.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(serverManagementFunction)
+      new apigateway.LambdaIntegration(playerManagementFunction)
+    );
+    const opPlayer = world.addResource("opPlayer");
+    opPlayer.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(playerManagementFunction)
+    );
+    const removeOpPlayer = world.addResource("removeOpPlayer");
+    removeOpPlayer.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(playerManagementFunction)
+    );
+    const whitelistPlayer = world.addResource("whitelistPlayer");
+    whitelistPlayer.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(playerManagementFunction)
     );
   }
 }
