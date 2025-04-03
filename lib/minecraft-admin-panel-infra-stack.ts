@@ -78,6 +78,12 @@ export class MinecraftAdminPanelInfraStack extends cdk.Stack {
     const datapackBucket = new s3.Bucket(this, "DatapackBucket", {
       removalPolicy: cdk.RemovalPolicy.DESTROY, // For development only
       autoDeleteObjects: true, // For development only
+      lifecycleRules: [
+        {
+          enabled: true,
+          expiration: cdk.Duration.days(1),
+        },
+      ],
       cors: [
         {
           allowedMethods: [
@@ -146,6 +152,12 @@ export class MinecraftAdminPanelInfraStack extends cdk.Stack {
 
     const restartWorld = world.addResource("restart");
     restartWorld.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(serverManagementFunction)
+    );
+
+    const updateWorld = world.addResource("update");
+    updateWorld.addMethod(
       "POST",
       new apigateway.LambdaIntegration(serverManagementFunction)
     );

@@ -57,12 +57,15 @@ export const handler = async (
       case path === `/api/minecraft/worlds/${worldId}/restart` &&
         method === "POST":
         return await handlers.restartWorld(worldId!);
+      case path === `/api/minecraft/worlds/${worldId}/update` &&
+        method === "POST":
+        return await handlers.updateWorld(worldId!, event);
       case path === `/api/minecraft/worlds/${worldId}/raw-rcon-command` &&
         method === "POST":
         return await handlers.rawRconCommand(worldId!, event);
-      case path === `/api/minecraft/servers/${serverName}/backup` &&
+      case path === `/api/minecraft/worlds/${worldId}/backup` &&
         method === "POST":
-        return await handlers.backupServer(serverName!);
+        return await handlers.backupWorld(worldId!);
       case path === `/api/minecraft/worlds/${worldId}/download` &&
         method === "POST":
         return await handlers.getDownloadUrl(worldId!, event);
@@ -165,6 +168,30 @@ const handlers = {
   async restartWorld(worldId: string): Promise<APIGatewayProxyResult> {
     await axios.post(`${AGENT_URL}/api/minecraft/worlds/${worldId}/restart`);
     return createResponse(200, { message: "World restart initiated" });
+  },
+
+  async updateWorld(
+    worldId: string,
+    event: APIGatewayProxyEvent
+  ): Promise<APIGatewayProxyResult> {
+    try {
+      log("POST /worlds/{worldId}/update", event.body);
+      await axios.post(
+        `${AGENT_URL}/api/minecraft/worlds/${worldId}/update`,
+        event.body,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return createResponse(200, {
+        message: "World updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating world:", error);
+      return createResponse(500, { message: "Error updating world" });
+    }
   },
 
   async rawRconCommand(
@@ -350,9 +377,9 @@ const handlers = {
     return createResponse(200, response.data);
   },
 
-  // POST /api/minecraft/servers/{serverName}/backup
-  async backupServer(serverName: string): Promise<APIGatewayProxyResult> {
-    await axios.post(`${AGENT_URL}/api/minecraft/servers/${serverName}/backup`);
+  // POST /api/minecraft/worlds/{worldId}/backup
+  async backupWorld(worldId: string): Promise<APIGatewayProxyResult> {
+    await axios.post(`${AGENT_URL}/api/minecraft/worlds/${worldId}/backup`);
     return createResponse(200, { message: "Backup initiated" });
   },
 };
